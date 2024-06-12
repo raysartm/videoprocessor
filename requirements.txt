@@ -15,7 +15,5 @@ easyocr
 torch
 torchvision
 torchaudio
-pytorch
-lap
 
 
