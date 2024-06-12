@@ -6,7 +6,7 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips
 import streamlit as st
 
 # Load the pre-trained MobileNet SSD model
-net = cv2.dnn.readNetFromCaffe('C:\\Users\\Sarwar Ali\\Conda123\\video_pro\\pages\\MobileNetSSD_deploy.prototxt.txt' , 'C:\\Users\\Sarwar Ali\\Conda123\\video_pro\\pages\\MobileNetSSD_deploy.caffemodel')
+net = cv2.dnn.readNetFromCaffe('pages/MobileNetSSD_deploy.prototxt.txt' , 'pages/MobileNetSSD_deploy.caffemodel')
 
 # List of class labels
 classes = ["background", "aeroplane", "bicycle", "bird", "boat",
