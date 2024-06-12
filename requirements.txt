@@ -5,6 +5,7 @@ SpeechRecognition
 numpy
 ibm_watson
 opencv-python
+pyopengl
 pandas 
 ultralytics
 matplotlib
