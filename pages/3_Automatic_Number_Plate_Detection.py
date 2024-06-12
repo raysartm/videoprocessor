@@ -6,7 +6,7 @@ import ast
 from scipy.interpolate import interp1d
 from ultralytics import YOLO
 import sys
-sys.path.append("C:\\Users\\Sarwar Ali\\Conda123\\video_pro\\pages\\utils")
+sys.path.append("pages/utils")
 
 import util  # Assuming util.py is directly inside the utils folder
 from sort import Sort
@@ -115,7 +115,7 @@ def process_video(video_path):
 
     # Load models
     coco_model = YOLO('yolov8n')
-    license_plate_detector = YOLO("C:\\Users\\Sarwar Ali\\Conda123\\video_pro\\pages\\yolov8n_license_plate.pt")
+    license_plate_detector = YOLO("pages/yolov8n_license_plate.pt")
 
 
     cap = cv2.VideoCapture(video_path)
