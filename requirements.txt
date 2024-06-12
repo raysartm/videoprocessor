@@ -4,7 +4,6 @@ pydub
 SpeechRecognition
 numpy
 ibm_watson
-pyopengl
 opencv-python
 
 pandas 
