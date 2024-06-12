@@ -4,8 +4,9 @@ pydub
 SpeechRecognition
 numpy
 ibm_watson
-opencv-python
 pyopengl
+opencv-python
+
 pandas 
 ultralytics
 matplotlib
