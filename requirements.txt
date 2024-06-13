@@ -3,9 +3,7 @@ moviepy
 pydub
 SpeechRecognition
 numpy
-ibm_watson
 opencv-python
-
 pandas 
 ultralytics
 matplotlib
@@ -16,5 +14,8 @@ easyocr
 torch
 torchvision
 torchaudio
+requests
+ffmpeg-python
+
 
 
