@@ -1,34 +1,47 @@
 import streamlit as st
+import moviepy.editor as mp
 import speech_recognition as sr
-from moviepy.editor import VideoFileClip  # Import moviepy for basic video analysis
 
-def transcribe_audio(uploaded_file, max_bytes=10 * 1024 * 1024):
-  """Attempts audio transcription with user confirmation for spoken content,
-  limiting memory usage by reading a maximum number of bytes and extracting
-  sample rate and sample width from the video."""
-  recognizer = sr.Recognizer()
-  confirmation_message = st.checkbox("This video appears to be a static image or doesn't contain spoken content. Continue with transcription?")
-  if not confirmation_message:
-    return None
-  try:
-    # Extract a small clip (first frame) for audio format information
-    clip = VideoFileClip(uploaded_file.name).subclip(0, 0.01)  # Extract first frame
-    sample_rate, sample_width = clip.audio.read_audio_samples(clip.audio.duration)[0]
-    clip.close()  # Close the clip to release resources
+# Function to transcribe video using SpeechRecognition library
+def transcribe_video(video_file):
+    st.write("Transcribing video...")
 
-    # Read a limited number of bytes from the video
-    video_bytes = uploaded_file.read(max_bytes)
+    # Load the video file
+    clip = mp.VideoFileClip(video_file)
+    audio = clip.audio
 
-    # Create AudioData object with extracted format information
-    audio_data = sr.AudioData(video_bytes, sample_rate=sample_rate, sample_width=sample_width)
-    
-    with sr.AudioFile(audio_data) as source:
-      audio_data = recognizer.record(source)
-    text = recognizer.recognize_google(audio_data)
-    return text
-  except sr.UnknownValueError:
-    return "Speech Recognition Could not understand audio"
-  except sr.RequestError as e:
-    return f"Could not request results from Google Speech Recognition service; {e}"
-  except Exception as e:  # Catch potential general exceptions
-    return f"An error occurred during transcription: {e}"
+    # Save audio as a temporary file
+    audio_file = "temp.wav"
+    audio.write_audiofile(audio_file)
+
+    # Use SpeechRecognition library to recognize speech
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)
+
+    # Perform speech recognition
+    try:
+        transcript = recognizer.recognize_google(audio_data)
+        st.write("Transcription:")
+        st.write(transcript)
+    except sr.UnknownValueError:
+        st.write("Speech recognition could not understand audio")
+    except sr.RequestError as e:
+        st.write(f"Could not request results from Speech Recognition service; {e}")
+
+# Streamlit UI
+def main():
+    st.title("Video Transcription")
+
+    # Upload video file
+    video_file = st.file_uploader("Upload a video file", type=['mp4', 'avi'])
+
+    if video_file is not None:
+        st.video(video_file)
+        st.write("Uploaded video file:", video_file.name)
+
+        if st.button("Transcribe Video"):
+            transcribe_video(video_file)
+
+if __name__ == "__main__":
+    main()
