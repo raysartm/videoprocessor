@@ -271,7 +271,7 @@ def process_video(video_file):
 
 # Streamlit app
 def main():
-    st.title("Video Processor")
+    st.title("Automatic Number Plate Recognition")
 
     # File uploader
     uploaded_file = st.file_uploader("Upload a video file", type=["mp4"])
