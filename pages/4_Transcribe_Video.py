@@ -51,7 +51,9 @@ def main():
     if uploaded_file is not None:
         try:
             temp_dir = "temp"
-            os.makedirs(temp_dir, exist_ok=True)
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
+                
             video_path = os.path.join(temp_dir, "video.mp4")
             uploaded_file.seek(0)
             with open(video_path, "wb") as f:
