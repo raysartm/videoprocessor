@@ -3,7 +3,6 @@ import requests
 import streamlit as st
 from moviepy.editor import VideoFileClip
 import tempfile
-import time
 
 # Function to extract audio from video using MoviePy
 def extract_audio(video_file):
@@ -19,12 +18,29 @@ def extract_audio(video_file):
     video_clip.close()
     return audio_path  # Return the audio file path
 
-# Function to transcribe audio using AssemblyAI (same as before)
+# Function to transcribe audio using AssemblyAI
 def transcribe_audio(api_key, audio_file):
+    url = "https://api.assemblyai.com/v2/transcript"
     headers = {
-        'authorization': api_key,
-        'content-type': 'application/json'
+        "authorization": api_key,
+        "content-type": "application/json"
     }
+    data = {
+        "audio_url": audio_file
+    }
+    response = requests.post(url, json=data, headers=headers)
+    response.raise_for_status()
+    transcript_id = response.json()["id"]
+
+    # Wait for transcription to complete
+    while True:
+        response = requests.get(f"{url}/{transcript_id}", headers=headers)
+        status = response.json()["status"]
+        if status == "completed":
+            break
+        time.sleep(2)
+
+    return response.json()["text"]
 
 # Streamlit app
 def main():
@@ -36,9 +52,9 @@ def main():
     if uploaded_file is not None:
         try:
             # Use temporary directory for audio file
-            audio_path = extract_audio(uploaded_file.name)  # Call extract_audio and get path
+            audio_path = extract_audio(uploaded_file)
 
-            api_key = os.getenv('ASSEMBLYAI_API_KEY')  # Replace with your AssemblyAI API key
+            api_key = st.secrets["ASSEMBLYAI_API_KEY"]  # Retrieve AssemblyAI API key from Streamlit secrets
 
             if st.button("Transcribe"):
                 transcript = transcribe_audio(api_key, audio_path)
