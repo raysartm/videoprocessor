@@ -16,7 +16,6 @@ torch
 torchvision
 torchaudio
 requests
-ffmpeg-python
 
 
 
