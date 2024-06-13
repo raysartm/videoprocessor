@@ -1,6 +1,7 @@
 import streamlit as st
 import moviepy.editor as mp
 import requests
+import os
 
 # Function to extract audio and get transcript using AssemblyAI
 def extract_transcript(video_file):
@@ -27,11 +28,20 @@ def extract_transcript(video_file):
     if response.status_code == 201:
         transcript_id = response.json()['id']
         transcript_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
-        transcript_response = requests.get(transcript_url, headers=headers)
-        transcript_text = transcript_response.json()['text']
-        return transcript_text
+        
+        # Poll AssemblyAI until transcription is complete
+        while True:
+            transcript_response = requests.get(transcript_url, headers=headers)
+            transcript_status = transcript_response.json()['status']
+            if transcript_status == "completed":
+                transcript_text = transcript_response.json()['text']
+                os.remove(audio_file)  # Remove temporary audio file
+                return transcript_text
+            elif transcript_status == "failed":
+                st.error("Transcription failed.")
+                return None
     else:
-        st.error(f"Transcription failed with status code {response.status_code}.")
+        st.error(f"Transcription request failed with status code {response.status_code}.")
         return None
 
 # Streamlit app
@@ -63,4 +73,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
