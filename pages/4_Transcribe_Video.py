@@ -50,9 +50,10 @@ def main():
 
     if uploaded_file is not None:
         try:
-            # Create temp directory if not exists
+            # Create temp directory relative to current directory
             temp_dir = os.path.join(os.getcwd(), "temp")
-            os.makedirs(temp_dir, exist_ok=True)
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir, exist_ok=True)
             
             video_path = os.path.join(temp_dir, "video.mp4")
             uploaded_file.seek(0)
@@ -62,7 +63,7 @@ def main():
             audio_path = os.path.join(temp_dir, "audio.wav")
             extract_audio(video_path, audio_path)
 
-            api_key = "78436d2aae7c4b26aa4d60f19cb28e05"  # Replace with your AssemblyAI API key
+            api_key = os.getenv('ASSEMBLYAI_API_KEY')  # Replace with your AssemblyAI API key
             
             if st.button("Transcribe"):
                 transcript = transcribe_audio(api_key, audio_path)
@@ -90,4 +91,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
