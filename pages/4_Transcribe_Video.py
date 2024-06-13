@@ -1,13 +1,18 @@
 import streamlit as st
 import moviepy.editor as mp
 import requests
-import os
 
 # Function to extract audio and get transcript using AssemblyAI
 def extract_transcript(video_file):
+    # Load video file
     video = mp.VideoFileClip(video_file)
+
+    # Extract audio
+    audio_clip = video.audio
+
+    # Export audio clip to WAV format (AssemblyAI supports WAV)
     audio_file = "temp_audio.wav"
-    video.audio.write_audiofile(audio_file)
+    audio_clip.write_audiofile(audio_file)
 
     # Upload audio to AssemblyAI for transcription
     url = "https://api.assemblyai.com/v2/transcript"
@@ -58,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
