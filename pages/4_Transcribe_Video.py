@@ -38,19 +38,32 @@ def transcribe_audio(api_key, audio_file):
     data = {
         "audio_url": audio_file
     }
-    response = requests.post(url, json=data, headers=headers)
-    response.raise_for_status()
-    transcript_id = response.json()["id"]
 
-    # Wait for transcription to complete
-    while True:
-        response = requests.get(f"{url}/{transcript_id}", headers=headers)
-        status = response.json()["status"]
-        if status == "completed":
-            break
-        time.sleep(2)
+    # Retry logic for API call (example: retry 3 times with backoff)
+    retries = 3
+    backoff_factor = 2
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()
+            transcript_id = response.json()["id"]
 
-    return response.json()["text"]
+            # Wait for transcription to complete
+            while True:
+                response = requests.get(f"{url}/{transcript_id}", headers=headers)
+                status = response.json()["status"]
+                if status == "completed":
+                    break
+                time.sleep(2)
+
+            return response.json()["text"]
+
+        except requests.exceptions.RequestException as e:
+            if attempt < retries - 1:
+                wait_time = (attempt + 1) * backoff_factor
+                time.sleep(wait_time)
+            else:
+                raise e
 
 # Streamlit app
 def main():
