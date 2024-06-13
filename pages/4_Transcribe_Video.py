@@ -1,75 +1,64 @@
 import streamlit as st
-import moviepy.editor as mp
 import requests
-import os
 
-# Function to extract audio and get transcript using AssemblyAI
-def extract_transcript(video_file):
-    # Load video file
-    video = mp.VideoFileClip(video_file)
+# Replace with your AssemblyAI API key
+assemblyai_api_key = "YOUR_API_KEY"
 
-    # Extract audio
-    audio_clip = video.audio
+def upload_video(video_file):
+  """Uploads video file directly to AssemblyAI for transcription"""
+  url = "https://api.assemblyai.com/v2/upload"
+  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
+  files = {"video": open(video_file.name, "rb")}
+  response = requests.post(url, headers=headers, files=files)
+  if response.status_code == 200:
+    return response.json()["upload_url"]
+  else:
+    st.error(f"Error uploading video: {response.text}")
+    return None
 
-    # Export audio clip to WAV format (AssemblyAI supports WAV)
-    audio_file = "temp_audio.wav"
-    audio_clip.write_audiofile(audio_file)
+def start_transcription(upload_url):
+  """Starts transcription job on AssemblyAI"""
+  url = "https://api.assemblyai.com/v2/transcript"
+  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
+  data = {"audio_url": upload_url}
+  response = requests.post(url, headers=headers, json=data)
+  if response.status_code == 201:
+    return response.json()["id"]
+  else:
+    st.error(f"Error starting transcription: {response.text}")
+    return None
 
-    # Upload audio to AssemblyAI for transcription
-    url = "https://api.assemblyai.com/v2/transcript"
-    headers = {
-        "authorization": "YOUR_ASSEMBLYAI_API_KEY",
-        "content-type": "application/json"
-    }
-    files = {'file': open(audio_file, 'rb')}
-    response = requests.post(url, headers=headers, files=files)
-
-    # Check if request was successful
-    if response.status_code == 201:
-        transcript_id = response.json()['id']
-        transcript_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
-        
-        # Poll AssemblyAI until transcription is complete
-        while True:
-            transcript_response = requests.get(transcript_url, headers=headers)
-            transcript_status = transcript_response.json()['status']
-            if transcript_status == "completed":
-                transcript_text = transcript_response.json()['text']
-                os.remove(audio_file)  # Remove temporary audio file
-                return transcript_text
-            elif transcript_status == "failed":
-                st.error("Transcription failed.")
-                return None
+def get_transcription(transcript_id):
+  """Polls AssemblyAI for completed transcription and returns text"""
+  url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
+  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
+  while True:
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+      data = response.json()
+      if data["status"] == "completed":
+        return data["text"]
+      else:
+        st.info("Transcription in progress...")
     else:
-        st.error(f"Transcription request failed with status code {response.status_code}.")
-        return None
+      st.error(f"Error getting transcription: {response.text}")
+    # Adjust polling interval based on your needs (seconds)
+    time.sleep(5)
 
-# Streamlit app
-def main():
-    st.title('Video Transcription')
+st.title("Video Audio Transcription with AssemblyAI (No ffmpeg)")
 
-    # Upload video file
-    video_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov"])
+uploaded_file = st.file_uploader("Choose a video file (Ensure AssemblyAI supports format)")
 
-    if video_file is not None:
-        # Display video
-        st.video(video_file)
-
-        # Process video and extract transcript
-        transcript = extract_transcript(video_file)
-
-        if transcript:
-            # Display transcript
-            st.header('Transcript')
-            st.text_area('Transcript', transcript, height=200)
-
-            # Download button for transcript
-            st.download_button(
-                label="Download Transcript",
-                data=transcript.encode('utf-8'),
-                file_name='transcript.txt',
-                mime='text/plain'
-            )
-
-if __name__ == "__main__":
-    main()
+if uploaded_file is not None:
+  upload_url = upload_video(uploaded_file)
+  if upload_url:
+    transcript_id = start_transcription(upload_url)
+    if transcript_id:
+      transcription = get_transcription(transcript_id)
+      if transcription:
+        st.success("Transcription completed!")
+        st.write(transcription)
+      else:
+        st.error("Error retrieving transcription")
+  else:
+    st.warning("AssemblyAI might not support the uploaded video format. Check their documentation.")
