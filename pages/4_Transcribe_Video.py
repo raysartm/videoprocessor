@@ -3,10 +3,17 @@ import requests
 import streamlit as st
 from moviepy.editor import VideoFileClip
 import tempfile
+import time
 
 # Function to extract audio from video using MoviePy
-def extract_audio(video_file):
-    video_clip = VideoFileClip(video_file)
+def extract_audio(uploaded_file):
+    # Save the uploaded file to a temporary location
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        temp_file.write(uploaded_file.read())
+        temp_file_path = temp_file.name
+
+    # Extract audio from the temporary video file
+    video_clip = VideoFileClip(temp_file_path)
     audio_clip = video_clip.audio
 
     # Create temporary directory and audio path relative to it
@@ -14,8 +21,11 @@ def extract_audio(video_file):
         audio_path = os.path.join(temp_dir, "audio.wav")
         audio_clip.write_audiofile(audio_path, codec='pcm_s16le')
 
+    # Close clips and delete temporary video file
     audio_clip.close()
     video_clip.close()
+    os.remove(temp_file_path)
+
     return audio_path  # Return the audio file path
 
 # Function to transcribe audio using AssemblyAI
@@ -52,9 +62,9 @@ def main():
     if uploaded_file is not None:
         try:
             # Use temporary directory for audio file
-            audio_path = extract_audio(uploaded_file)
+            audio_path = extract_audio(uploaded_file)  # Call extract_audio with uploaded_file
 
-            api_key = st.secrets["ASSEMBLYAI_API_KEY"]  # Retrieve AssemblyAI API key from Streamlit secrets
+            api_key = os.getenv('ASSEMBLYAI_API_KEY')  # Replace with your AssemblyAI API key
 
             if st.button("Transcribe"):
                 transcript = transcribe_audio(api_key, audio_path)
