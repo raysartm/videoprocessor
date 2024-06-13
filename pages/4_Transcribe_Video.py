@@ -1,100 +1,60 @@
-import os
-import requests
 import streamlit as st
-from moviepy.editor import VideoFileClip
-import tempfile
-import time
+import moviepy.editor as mp
+import requests
+import os
 
-# Function to extract audio from video using MoviePy
-def extract_audio(uploaded_file):
-    # Save the uploaded file to a temporary location
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_file.write(uploaded_file.read())
-        temp_file_path = temp_file.name
+# Function to extract audio and get transcript using AssemblyAI
+def extract_transcript(video_file):
+    video = mp.VideoFileClip(video_file)
+    audio_file = "temp_audio.wav"
+    video.audio.write_audiofile(audio_file)
 
-    # Extract audio from the temporary video file
-    video_clip = VideoFileClip(temp_file_path)
-    audio_clip = video_clip.audio
-
-    # Create temporary directory and audio path relative to it
-    with tempfile.TemporaryDirectory() as temp_dir:
-        audio_path = os.path.join(temp_dir, "audio.wav")
-        audio_clip.write_audiofile(audio_path, codec='pcm_s16le')
-
-    # Close clips and delete temporary video file
-    audio_clip.close()
-    video_clip.close()
-    os.remove(temp_file_path)
-
-    return audio_path  # Return the audio file path
-
-# Function to transcribe audio using AssemblyAI
-def transcribe_audio(api_key, audio_file):
+    # Upload audio to AssemblyAI for transcription
     url = "https://api.assemblyai.com/v2/transcript"
     headers = {
-        "authorization": api_key,
+        "authorization": "YOUR_ASSEMBLYAI_API_KEY",
         "content-type": "application/json"
     }
-    data = {
-        "audio_url": audio_file
-    }
+    files = {'file': open(audio_file, 'rb')}
+    response = requests.post(url, headers=headers, files=files)
 
-    # Retry logic for API call (example: retry 3 times with backoff)
-    retries = 3
-    backoff_factor = 2
-    for attempt in range(retries):
-        try:
-            response = requests.post(url, json=data, headers=headers)
-            response.raise_for_status()
-            transcript_id = response.json()["id"]
-
-            # Wait for transcription to complete
-            while True:
-                response = requests.get(f"{url}/{transcript_id}", headers=headers)
-                status = response.json()["status"]
-                if status == "completed":
-                    break
-                time.sleep(2)
-
-            return response.json()["text"]
-
-        except requests.exceptions.RequestException as e:
-            if attempt < retries - 1:
-                wait_time = (attempt + 1) * backoff_factor
-                time.sleep(wait_time)
-            else:
-                raise e
+    # Check if request was successful
+    if response.status_code == 201:
+        transcript_id = response.json()['id']
+        transcript_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
+        transcript_response = requests.get(transcript_url, headers=headers)
+        transcript_text = transcript_response.json()['text']
+        return transcript_text
+    else:
+        st.error(f"Transcription failed with status code {response.status_code}.")
+        return None
 
 # Streamlit app
 def main():
-    st.set_page_config(page_title="Video Transcription")
-    st.title("Video Transcription")
+    st.title('Video Transcription')
 
-    uploaded_file = st.file_uploader("Upload a video file...", type=["mp4", "mov", "avi", "mkv"])
+    # Upload video file
+    video_file = st.file_uploader("Upload a video file", type=["mp4", "avi", "mov"])
 
-    if uploaded_file is not None:
-        try:
-            # Use temporary directory for audio file
-            audio_path = extract_audio(uploaded_file)  # Call extract_audio with uploaded_file
+    if video_file is not None:
+        # Display video
+        st.video(video_file)
 
-            api_key = os.getenv('ASSEMBLYAI_API_KEY')  # Replace with your AssemblyAI API key
+        # Process video and extract transcript
+        transcript = extract_transcript(video_file)
 
-            if st.button("Transcribe"):
-                transcript = transcribe_audio(api_key, audio_path)
+        if transcript:
+            # Display transcript
+            st.header('Transcript')
+            st.text_area('Transcript', transcript, height=200)
 
-                st.subheader("Transcript:")
-                st.write(transcript)
-
-                output_path = os.path.join(tempfile.gettempdir(), "transcript.txt")  # Use system temp dir
-                with open(output_path, "w") as out:
-                    out.write(transcript)
-
-                st.markdown("### Download Transcript")
-                with open(output_path, "rb") as file:
-                    st.download_button("Download", file.read(), file_name="transcript.txt", mime="text/plain")
-
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+            # Download button for transcript
+            st.download_button(
+                label="Download Transcript",
+                data=transcript.encode('utf-8'),
+                file_name='transcript.txt',
+                mime='text/plain'
+            )
 
 if __name__ == "__main__":
     main()
