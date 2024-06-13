@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Replace with your AssemblyAI API key
-assemblyai_api_key = "YOUR_API_KEY"
+assemblyai_api_key = "78436d2aae7c4b26aa4d60f19cb28e05"
 
 def upload_video(video_file):
   """Uploads video file directly to AssemblyAI for transcription"""
