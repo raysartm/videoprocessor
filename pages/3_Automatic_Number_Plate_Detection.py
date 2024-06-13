@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from ultralytics import YOLO
 import sys
 sys.path.append("pages/utils")
-
+import easyocr
 import util  # Assuming util.py is directly inside the utils folder
 from sort import Sort
 import os
