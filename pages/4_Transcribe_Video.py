@@ -1,47 +1,67 @@
 import streamlit as st
-from pydub import AudioSegment
+import os
+import moviepy.editor as mp
 import speech_recognition as sr
+from io import BytesIO
 
-# Function to extract audio from video and transcribe it
-def transcribe_video(video_file):
-    st.write("Transcribing video...")
-
-    # Read video file and extract audio
+def video_to_text(video_file):
+    # Load the uploaded video file
     video_bytes = video_file.read()
-    audio = AudioSegment.from_file(video_bytes, format='mp4').set_channels(1)
 
-    # Export audio as WAV (Streamlit currently only supports WAV playback)
-    audio_path = "temp_audio.wav"
-    audio.export(audio_path, format="wav")
+    # Save the video file temporarily
+    temp_video_path = "temp_video.mp4"
+    with open(temp_video_path, "wb") as f:
+        f.write(video_bytes)
 
-    # Perform speech recognition
+    # Load the video file using moviepy
+    video = mp.VideoFileClip(temp_video_path)
+
+    # Extract audio from the video
+    audio = video.audio
+
+    # Save the extracted audio to a file (optional)
+    audio_file = "extracted_audio.wav"
+    audio.write_audiofile(audio_file)
+
+    # Perform speech recognition on the extracted audio
     recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
+
+    # Load audio file
+    with sr.AudioFile(audio_file) as source:
         audio_data = recognizer.record(source)
 
-    # Perform speech recognition
+    # Recognize speech using Google Speech Recognition
     try:
         transcript = recognizer.recognize_google(audio_data)
-        st.write("Transcription:")
-        st.write(transcript)
+        return transcript
     except sr.UnknownValueError:
-        st.write("Speech recognition could not understand audio")
+        return "Could not understand audio"
     except sr.RequestError as e:
-        st.write(f"Could not request results from Speech Recognition service; {e}")
+        return f"Error: {e}"
+    finally:
+        # Clean up: delete temporary video file
+        if os.path.exists(temp_video_path):
+            os.remove(temp_video_path)
 
-# Streamlit UI
 def main():
-    st.title("Video Transcription")
+    st.title("Video Transcription App")
+    st.markdown("Upload a video file")
 
-    # Upload video file
-    video_file = st.file_uploader("Upload a video file", type=['mp4', 'avi'])
+    # File uploader for video
+    uploaded_file = st.file_uploader("Drag and drop file here",
+                                     type=['mp4', 'mov', 'mpeg4'],
+                                     accept_multiple_files=False)
 
-    if video_file is not None:
-        st.video(video_file)
-        st.write("Uploaded video file:", video_file.name)
+    if uploaded_file is not None:
+        # Display uploaded video details
+        file_details = {"FileName": uploaded_file.name, "FileType": uploaded_file.type, "FileSize": uploaded_file.size}
+        st.write(file_details)
 
-        if st.button("Transcribe Video"):
-            transcribe_video(video_file)
+        # Perform transcription when user clicks the button
+        if st.button("Transcribe"):
+            transcript = video_to_text(uploaded_file)
+            st.subheader("Transcript:")
+            st.write(transcript)
 
 if __name__ == "__main__":
     main()
