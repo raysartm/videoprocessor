@@ -104,11 +104,14 @@ def draw_border(img, top_left, bottom_right, color=(0, 255, 0), thickness=10, li
     return img
 
 
-def process_video(video_path):
+def process_video(video_file):
     # Convert uploaded file to file path
     video_path = "uploaded_video.mp4"
     with open(video_path, "wb") as f:
-        f.write(video_file.getbuffer())
+        f.write(video_file.read())  # Use read() instead of getbuffer()
+
+    # The rest of your processing logic remains unchanged...
+
 
     results = {}
     mot_tracker = Sort()
