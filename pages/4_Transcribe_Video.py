@@ -1,22 +1,22 @@
 import streamlit as st
-import moviepy.editor as mp
+from pydub import AudioSegment
 import speech_recognition as sr
 
-# Function to transcribe video using SpeechRecognition library
+# Function to extract audio from video and transcribe it
 def transcribe_video(video_file):
     st.write("Transcribing video...")
 
-    # Load the video file
-    clip = mp.VideoFileClip(video_file)
-    audio = clip.audio
+    # Read video file and extract audio
+    video_bytes = video_file.read()
+    audio = AudioSegment.from_file(video_bytes, format='mp4').set_channels(1)
 
-    # Save audio as a temporary file
-    audio_file = "temp.wav"
-    audio.write_audiofile(audio_file)
+    # Export audio as WAV (Streamlit currently only supports WAV playback)
+    audio_path = "temp_audio.wav"
+    audio.export(audio_path, format="wav")
 
-    # Use SpeechRecognition library to recognize speech
+    # Perform speech recognition
     recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_file) as source:
+    with sr.AudioFile(audio_path) as source:
         audio_data = recognizer.record(source)
 
     # Perform speech recognition
@@ -31,7 +31,7 @@ def transcribe_video(video_file):
 
 # Streamlit UI
 def main():
-    st.title("Video Transcription")
+    st.title("Video Transcription without External APIs")
 
     # Upload video file
     video_file = st.file_uploader("Upload a video file", type=['mp4', 'avi'])
