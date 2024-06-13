@@ -31,7 +31,7 @@ def transcribe_video(video_file):
 
 # Streamlit UI
 def main():
-    st.title("Video Transcription without External APIs")
+    st.title("Video Transcription")
 
     # Upload video file
     video_file = st.file_uploader("Upload a video file", type=['mp4', 'avi'])
