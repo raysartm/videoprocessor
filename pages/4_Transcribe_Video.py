@@ -1,18 +1,28 @@
 import streamlit as st
 import speech_recognition as sr
+from moviepy.editor import VideoFileClip  # Import moviepy for basic video analysis
 
 def transcribe_audio(uploaded_file, max_bytes=10 * 1024 * 1024):
   """Attempts audio transcription with user confirmation for spoken content,
-  limiting memory usage by reading a maximum number of bytes."""
+  limiting memory usage by reading a maximum number of bytes and extracting
+  sample rate and sample width from the video."""
   recognizer = sr.Recognizer()
   confirmation_message = st.checkbox("This video appears to be a static image or doesn't contain spoken content. Continue with transcription?")
   if not confirmation_message:
     return None
   try:
+    # Extract a small clip (first frame) for audio format information
+    clip = VideoFileClip(uploaded_file.name).subclip(0, 0.01)  # Extract first frame
+    sample_rate, sample_width = clip.audio.read_audio_samples(clip.audio.duration)[0]
+    clip.close()  # Close the clip to release resources
+
     # Read a limited number of bytes from the video
     video_bytes = uploaded_file.read(max_bytes)
-    # Open the video content in memory using AudioFile
-    with sr.AudioFile(sr.AudioData(video_bytes)) as source:
+
+    # Create AudioData object with extracted format information
+    audio_data = sr.AudioData(video_bytes, sample_rate=sample_rate, sample_width=sample_width)
+    
+    with sr.AudioFile(audio_data) as source:
       audio_data = recognizer.record(source)
     text = recognizer.recognize_google(audio_data)
     return text
@@ -22,18 +32,3 @@ def transcribe_audio(uploaded_file, max_bytes=10 * 1024 * 1024):
     return f"Could not request results from Google Speech Recognition service; {e}"
   except Exception as e:  # Catch potential general exceptions
     return f"An error occurred during transcription: {e}"
-
-st.title("Video Audio Transcription (No External Dependencies)")
-
-uploaded_file = st.file_uploader("Choose a video file")
-
-if uploaded_file is not None:
-  transcription = transcribe_audio(uploaded_file)
-  if transcription:
-    st.success("Transcription completed!")
-    st.write(transcription)
-  else:
-    if not transcription:
-      st.info("User opted not to transcribe.")
-    else:
-      st.error(transcription)
