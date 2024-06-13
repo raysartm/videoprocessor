@@ -1,34 +1,44 @@
 import os
+import requests
 import streamlit as st
-from ibm_watson import SpeechToTextV1
-from ibm_watson.websocket import RecognizeCallback, AudioSource
-from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 import subprocess
+import time
 
 # Function to extract audio from video
 def extract_audio(video_file, audio_file):
     command = f"ffmpeg -i {video_file} -ab 160k -ar 44100 -vn {audio_file}"
     subprocess.call(command, shell=True)
 
-# Function to setup STT service
-def setup_stt_service(apikey, url):
-    authenticator = IAMAuthenticator(apikey)
-    stt = SpeechToTextV1(authenticator=authenticator)
-    stt.set_service_url(url)
-    return stt
-
-# Function to transcribe audio
-def transcribe_audio(audio_file, stt_service):
+# Function to transcribe audio using AssemblyAI
+def transcribe_audio(api_key, audio_file):
+    headers = {
+        'authorization': api_key,
+        'content-type': 'application/json'
+    }
+    
+    # Upload audio file
     with open(audio_file, 'rb') as f:
-        res = stt_service.recognize(audio=f, content_type='audio/wav', model='en-AU_NarrowbandModel', continuous=True).get_result()
-    return res
-
-# Function to process results and output text
-def process_results(results):
-    text = [result['alternatives'][0]['transcript'].rstrip() + '.\n' for result in results['results']]
-    text = [para[0].title() + para[1:] for para in text]
-    transcript = ''.join(text)
-    return transcript
+        response = requests.post('https://api.assemblyai.com/v2/upload', headers=headers, files={'file': f})
+        upload_url = response.json()['upload_url']
+    
+    # Transcription request
+    transcription_request = {
+        'audio_url': upload_url
+    }
+    response = requests.post('https://api.assemblyai.com/v2/transcript', json=transcription_request, headers=headers)
+    transcript_id = response.json()['id']
+    
+    # Polling for the transcription result
+    while True:
+        response = requests.get(f'https://api.assemblyai.com/v2/transcript/{transcript_id}', headers=headers)
+        result = response.json()
+        if result['status'] == 'completed':
+            return result['text']
+        elif result['status'] == 'failed':
+            raise Exception('Transcription failed')
+        else:
+            st.write("Transcription in progress, please wait...")
+            time.sleep(5)
 
 # Streamlit app
 def main():
@@ -50,13 +60,10 @@ def main():
             audio_path = os.path.join(temp_dir, "audio.wav")
             extract_audio(video_path, audio_path)
 
-            stt_apikey = st.text_input("Enter your IBM Watson Speech to Text API key:")
-            stt_url = st.text_input("Enter the service URL:")
-            stt_service = setup_stt_service(stt_apikey, stt_url)
-
+            api_key = "78436d2aae7c4b26aa4d60f19cb28e05"  # Replace with your AssemblyAI API key
+            
             if st.button("Transcribe"):
-                results = transcribe_audio(audio_path, stt_service)
-                transcript = process_results(results)
+                transcript = transcribe_audio(api_key, audio_path)
 
                 st.subheader("Transcript:")
                 st.write(transcript)
