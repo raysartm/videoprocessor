@@ -8,13 +8,14 @@ def upload_video(video_file):
   """Uploads video file directly to AssemblyAI for transcription"""
   url = "https://api.assemblyai.com/v2/upload"
   headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
-  files = {"video": open(video_file.name, "rb")}
+  files = {"video": video_file.read()}  # Read the video content
   response = requests.post(url, headers=headers, files=files)
   if response.status_code == 200:
     return response.json()["upload_url"]
   else:
     st.error(f"Error uploading video: {response.text}")
     return None
+
 
 def start_transcription(upload_url):
   """Starts transcription job on AssemblyAI"""
