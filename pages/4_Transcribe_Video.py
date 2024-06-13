@@ -1,65 +1,40 @@
 import streamlit as st
-import requests
+from moviepy.editor import VideoFileClip
+import speech_recognition as sr
 
-# Replace with your AssemblyAI API key
-assemblyai_api_key = "78436d2aae7c4b26aa4d60f19cb28e05"
+def extract_audio(video_file):
+  """Extracts audio from a video file using moviepy (install moviepy separately)"""
+  # You might need to adjust the output filename based on your needs
+  audio_filename = "extracted_audio.wav"
+  clip = VideoFileClip(video_file.name)
+  clip.audio.write_audiofile(audio_filename)
+  return audio_filename
 
-def upload_video(video_file):
-  """Uploads video file directly to AssemblyAI for transcription"""
-  url = "https://api.assemblyai.com/v2/upload"
-  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
-  files = {"video": video_file.read()}  # Read the video content
-  response = requests.post(url, headers=headers, files=files)
-  if response.status_code == 200:
-    return response.json()["upload_url"]
-  else:
-    st.error(f"Error uploading video: {response.text}")
-    return None
+def transcribe_audio(audio_filename):
+  """Transcribes audio file using SpeechRecognition"""
+  recognizer = sr.Recognizer()
+  with sr.AudioFile(audio_filename) as source:
+    audio_data = recognizer.record(source)
+  try:
+    text = recognizer.recognize_google(audio_data)
+    return text
+  except sr.UnknownValueError:
+    return "Speech Recognition Could not understand audio"
+  except sr.RequestError as e:
+    return f"Could not request results from Google Speech Recognition service; {e}"
 
+st.title("Video Audio Transcription (No External API)")
 
-def start_transcription(upload_url):
-  """Starts transcription job on AssemblyAI"""
-  url = "https://api.assemblyai.com/v2/transcript"
-  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
-  data = {"audio_url": upload_url}
-  response = requests.post(url, headers=headers, json=data)
-  if response.status_code == 201:
-    return response.json()["id"]
-  else:
-    st.error(f"Error starting transcription: {response.text}")
-    return None
-
-def get_transcription(transcript_id):
-  """Polls AssemblyAI for completed transcription and returns text"""
-  url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
-  headers = {"Authorization": f"Bearer {assemblyai_api_key}"}
-  while True:
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-      data = response.json()
-      if data["status"] == "completed":
-        return data["text"]
-      else:
-        st.info("Transcription in progress...")
-    else:
-      st.error(f"Error getting transcription: {response.text}")
-    # Adjust polling interval based on your needs (seconds)
-    time.sleep(5)
-
-st.title("Video Audio Transcription with AssemblyAI (No ffmpeg)")
-
-uploaded_file = st.file_uploader("Choose a video file (Ensure AssemblyAI supports format)")
+uploaded_file = st.file_uploader("Choose a video file")
 
 if uploaded_file is not None:
-  upload_url = upload_video(uploaded_file)
-  if upload_url:
-    transcript_id = start_transcription(upload_url)
-    if transcript_id:
-      transcription = get_transcription(transcript_id)
-      if transcription:
-        st.success("Transcription completed!")
-        st.write(transcription)
-      else:
-        st.error("Error retrieving transcription")
+  audio_filename = extract_audio(uploaded_file)
+  if audio_filename:
+    transcription = transcribe_audio(audio_filename)
+    if transcription:
+      st.success("Transcription completed!")
+      st.write(transcription)
+    else:
+      st.error(transcription)
   else:
-    st.warning("AssemblyAI might not support the uploaded video format. Check their documentation.")
+    st.error("Error extracting audio")
