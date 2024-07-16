@@ -12,13 +12,7 @@ def set_bg_image(image_file):
         background: url("data:image/png;base64,{b64}") no-repeat center center fixed;
         background-size: cover;
     }}
-    h1 {{
-        color: gold;
-    }}
-    h3 {{
-        color: brown;
-    }}
-    p {{
+    h1, h2, h3, h4, h5, h6, p {{
         color: black;
     }}
     </style>
