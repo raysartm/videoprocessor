@@ -1,20 +1,32 @@
 import streamlit as st
+import base64
 
-# Define the CSS for the image background and white text
-page_bg_img = '''
-<style>
-[data-testid="stAppViewContainer"] {
-    background: url("https://images.pexels.com/photos/5603660/pexels-photo-5603660.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1") no-repeat center center fixed;
-    background-size: cover;
-}
-[data-testid="stMarkdownContainer"] h1, h2, h3, h4, h5, h6, p {
-    color: white;
-}
-</style>
-'''
+# Function to set the background image
+def set_bg_image(image_file):
+    with open(image_file, "rb") as f:
+        data = f.read()
+    b64 = base64.b64encode(data).decode()
+    page_bg_img = f'''
+    <style>
+    [data-testid="stAppViewContainer"] {{
+        background: url("data:image/png;base64,{b64}") no-repeat center center fixed;
+        background-size: cover;
+    }}
+    h1 {{
+        color: gold;
+    }}
+    h3 {{
+        color: brown;
+    }}
+    p {{
+        color: black;
+    }}
+    </style>
+    '''
+    st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# Apply the CSS to the Streamlit app
-st.markdown(page_bg_img, unsafe_allow_html=True)
+# Set the background image
+set_bg_image("background.png")
 
 st.title("Video Processor App")
 st.write("""
@@ -33,7 +45,7 @@ st.write("Generate a concise summary of your video, highlighting the most import
 st.markdown("### 3. Automatic Number Plate Detection")
 st.write("Identify and extract vehicle number plates from videos, useful for security and traffic monitoring.")
 
-st.markdown("### 4. Transcribe Video ")
+st.markdown("### 4. Transcribe Video")
 st.write("Convert the audio from your video into text with a click of a button.")
 
 st.markdown("### 5. Change Video Speed")
