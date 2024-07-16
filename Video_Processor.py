@@ -10,23 +10,17 @@ def set_bg_image(image_file):
     <style>
     [data-testid="stAppViewContainer"] {{
         background: url("data:image/png;base64,{b64}") no-repeat center center fixed;
-        background-size: cover;
+        background-size: 200%;
     }}
-    h1 {{
-        color: gold;
-    }}
-    h3 {{
-        color: brown;
-    }}
-    p {{
-        color: black;
+    h1, h2, h3, h4, h5, h6, p {{
+        color: white;
     }}
     </style>
     '''
     st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # Set the background image
-set_bg_image("background.png")
+set_bg_image("bg2.png")
 
 st.title("Video Processor App")
 st.write("""
