@@ -4,6 +4,7 @@ pydub
 SpeechRecognition
 numpy
 opencv-python-headless
+pyopengl
 pandas 
 ultralytics
 matplotlib
