@@ -3,7 +3,7 @@ moviepy
 pydub
 SpeechRecognition
 numpy
-opencv-python-headless
+opencv-python
 pandas 
 ultralytics
 matplotlib
