@@ -2,25 +2,7 @@ import streamlit as st
 import base64
 
 # Function to set the background image
-'''def set_bg_image(image_file):
-    with open(image_file, "rb") as f:
-        data = f.read()
-    b64 = base64.b64encode(data).decode()
-    page_bg_img = f'''
-    <style>
-    [data-testid="stAppViewContainer"] {{
-        background: url("data:image/jpeg;base64,{b64}") no-repeat center center fixed;
-        background-size: 100%;
-    }}
-    h1, h2, h3, h4, h5, h6, p {{
-        color: white;
-    }}
-    </style>
-    '''
-    st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# Set the background image
-set_bg_image("bg.jpg")'''
 
 st.title("Video Processor App")
 st.write("""
